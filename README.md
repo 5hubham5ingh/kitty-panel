@@ -26,7 +26,7 @@ Ensure you have the following installed:
 ## Installation
 Clone the repository and make the script executable:
 ```sh
-git clone https://github.com/yourusername/kitty-dashboard.git
+git clone https://github.com/5hubham5ingh/kitty-panel
 cd kitty-dashboard
 chmod +x dashboard.sh
 ```
