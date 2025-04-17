@@ -22,7 +22,20 @@ Ensure you have the following installed:
 - `pactl` (PulseAudio control)
 - `iwconfig` (for network info, part of `wireless-tools`)
 - `yay` (AUR package manager for Arch-based systems)
+### Kitty Remote Control Setup
+Also, make sure to enable **remote control** in your Kitty config by adding the following line:
+```bash
+allow_remote_control yes
+```
+You can do this by:
+ Opening your config:
+- Press Ctrl + Shift + F2 to open the Kitty configuration.
+Reload the config:
+- Press Ctrl + Shift + F5 to reload your config, or run the following command:
+- kill -SIGUSR1 $KITTY_PID
+```
 
+For more information about the Kitty Config, refer to the [Kitty Configuration Docs](https://sw.kovidgoyal.net/kitty/conf).
 ## Installation
 Clone the repository and make the script executable:
 ```sh
