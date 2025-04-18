@@ -28,18 +28,18 @@ Also, make sure to enable **remote control** in your Kitty config by adding the 
 allow_remote_control yes
 ```
 You can do this by:
- Opening your config:
-- Press Ctrl + Shift + F2 to open the Kitty configuration.
-Reload the config:
-- Press Ctrl + Shift + F5 to reload your config, or run the following command:
-- kill -SIGUSR1 $KITTY_PID
-```
+* **Opening your config**
+  Press Ctrl + Shift + F2 to open then edit Kitty configuration.
+* **Reload the config**
+  Press Ctrl + Shift + F5 to reload your config, or run the following command
+  `kitty @ load-config`
+
 
 For more information about the Kitty Config, refer to the [Kitty Configuration Docs](https://sw.kovidgoyal.net/kitty/conf).
 ## Installation
 Clone the repository and make the script executable:
 ```sh
-git clone https://github.com/5hubham5ingh/kitty-panel
+git clone --depth 1 https://github.com/5hubham5ingh/kitty-panel
 cd kitty-panel
 chmod +x dashboard.sh
 ```
