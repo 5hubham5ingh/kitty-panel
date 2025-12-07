@@ -10,10 +10,11 @@
 //   'kitty @ focus-window',
 // ].forEach(cmd => { os.sleep(1..seconds); os.exec(cmd.split(' ')) })
 
-const pendingState = "Calculating...";
+const pendingState = "∙∙∙";
 
 const state = {
   colors: ["#ffffff", "#ffffff", "#ffffff"],
+  colorCache: undefined,
   time: pendingState,
   calender: pendingState,
   volume: pendingState,
@@ -32,6 +33,11 @@ const state = {
 main();
 
 async function main() {
+  os.signal(os.SIGINT, () => {
+    print(terminal.cursorShow);
+    std.exit(0);
+  });
+  std.printf(terminal.cursorHide);
   updateWeather();
   updateCalender();
   updateBattery();
@@ -39,12 +45,11 @@ async function main() {
   updateLocationState();
   updateCameraState();
   while (true) {
+    updateTime(), renderUI();
     await Promise.all([
-      renderUI(),
       updateColors(),
-      updateTime(),
       updateWifiState(),
-      updateValumeState(),
+      updateVolumeState(),
       updateBrightnessState(),
       updateBluetooth(),
     ]);
@@ -67,28 +72,57 @@ async function main() {
 // }
 
 function renderUI() {
-  renderLogo();
+  if (JSON.stringify(state.colors) !== JSON.stringify(state.colorCache)) {
+    renderLogo();
+    state.colorCache = state.colors;
+  } else std.printf(terminal.cursorTo(0, 0));
   const volumeAndBluetooth = "\n" +
-    state.volume.border("rounded").join(state.screenShare.border("rounded"))
+    `Volume: ${state.volume}`.style(state.colors[1]).border(
+      "rounded",
+      state.colors[1],
+    ).join(
+      ("Screen: " + (state.screenShare ?? "None")).style(state.colors[1])
+        .border("rounded", state.colors[1]),
+    )
       .stack(
-        state.bluetooth.border("rounded").join(
-          state.location.border("rounded"),
+        `Bluetooth: ${state.bluetooth}`.style(state.colors[2]).border(
+          "rounded",
+          state.colors[2],
+        ).join(
+          ("Location: " + (state.location ?? "None")).style(state.colors[2])
+            .border("rounded", state.colors[2]),
         ),
         "right",
       );
   const volumeBluetoothAndWeather = volumeAndBluetooth.join(
     state.weather.border("rounded"),
   );
-  const wifiBrightnessAndBattery = state.wifi.border("rounded").join(
-    state.brightness.border("rounded"),
-  ).join(
-    state.battery.border("rounded"),
-  ).join(state.camera.border("rounded"));
+  const wifiBrightnessAndBattery = `Wifi: ${state.wifi}`.style(state.colors[0])
+    .border("rounded", state.colors[0]).join(
+      `Brightness: ${state.brightness}`.style(state.colors[0]).border(
+        "rounded",
+        state.colors[0],
+      ),
+    ).join(
+      `Battery: ${state.battery}`.style(state.colors[0]).border(
+        "rounded",
+        state.colors[0],
+      ),
+    ).join(
+      ("Camera: " + state.camera).style(state.colors[0]).border(
+        "rounded",
+        state.colors[0],
+      ),
+    );
   const infoCollection = volumeBluetoothAndWeather.stack(
     wifiBrightnessAndBattery,
     "right",
-  ).join(state.calender.border("rounded"));
-  infoCollection.join(state.time.border("rounded", "", 2, 0)).align("right")
+  ).join(
+    state.calender.style(state.colors[1]).border("rounded", state.colors[1]),
+  );
+  infoCollection.join(
+    state.time.style(state.colors[0]).border("rounded", state.colors[0], 2, 0),
+  ).align("right")
     .log();
 }
 
@@ -127,7 +161,7 @@ async function updateCalender() {
     const day = now.getDate();
     for (let d = 1; d <= daysInMonth; d++) {
       if (d == day) {
-        out += String(d).padStart(2, " ").style(["bg-grey", "black"]) + " ";
+        out += String(d).padStart(2, " ").style(["bg-grey", "#000000"]) + " ";
       } else {
         out += String(d).padStart(2, " ") + " ";
       }
@@ -152,7 +186,6 @@ async function updateWeather() {
     const value = await execAsync(`curl -s -H "Accept: text/*" wttr.in/${""}`);
     const currentWeather = value.lines().map((line) => line.trim()).slice(2, 7)
       .join("\n");
-    const padX = 3, padY = 1;
     state.weather = currentWeather;
     await os.sleepAsync(4..hours);
   }
@@ -170,27 +203,27 @@ function updateTime() {
 }
 
 function updateColors() {
-  const kittyColors = exec("kitty @ get-colors");
-  state.colors = kittyColors.lines().filter((line) =>
-    line.startsWith("selection_background ") || line.startsWith("color0 ") ||
-    line.startsWith("color2 ")
-  )
-    .map((line) => line.split(/\s+/)?.[1]);
+  return execAsync("kitty @ get-colors").then((result) =>
+    result.lines().filter((line) =>
+      line.startsWith("selection_background ") || line.startsWith("color0 ") ||
+      line.startsWith("color2 ")
+    )
+      .map((line) => line.split(/\s+/)?.[1])
+      .pipe((colors) => state.colors = colors)
+  );
 }
 
 function updateWifiState() {
   return execAsync("iwconfig wlan0").then((val) => {
     const match = val.match(/ESSID:"([^\"]+)"/);
-    const essid = match ? match[1] : "N/A";
-    state.wifi = `Wifi: ${essid}`;
+    state.wifi = match ? match[1] : "N/A";
   });
 }
 
-function updateValumeState() {
+function updateVolumeState() {
   return execAsync("pactl get-sink-volume @DEFAULT_SINK@").then((val) => {
     const match = val.match(/(\d+)%/);
-    const volumePercentage = match ? match[0] : "N/A";
-    state.volume = `Volume: ${volumePercentage}`;
+    state.volume = match ? match[0] : "N/A";
   });
 }
 
@@ -201,7 +234,7 @@ function updateBrightnessState() {
   ])
     .then(([currentBrightness, maxBrightness]) => {
       const percentage = Math.floor((currentBrightness * 100) / maxBrightness);
-      state.brightness = `Brightness: ${percentage}%`;
+      state.brightness = percentage;
     });
 }
 
@@ -213,19 +246,17 @@ function updateBluetooth() {
       );
 
       if (!isBtOn) {
-        return state.bluetooth = "Bluetooth: Off";
+        return state.bluetooth = "Off";
       }
 
       return execAsync("bluetoothctl devices Connected")
         .then((device) => {
           const deviceName = device?.trim().words().slice(2).join(" ");
-          state.bluetooth = `Bluetooth: ${
-            deviceName.length ? deviceName : "Not connected"
-          }`;
+          state.bluetooth = deviceName.length ? deviceName : "Disconnected";
         });
     })
     .catch(() => {
-      state.bluetooth = "Bluetooth: Error";
+      state.bluetooth = "Error";
     });
 }
 
@@ -234,7 +265,7 @@ async function updateBattery() {
     await execAsync("upower -i /org/freedesktop/UPower/devices/DisplayDevice")
       .then((batStat) => {
         const capacity = batStat.words().find((word) => word.includes("%"));
-        state.battery = `Battery: ${capacity}`;
+        state.battery = capacity;
         if (parseInt(capacity) < 20) {
           return execAsync(`notify-send -u critical "Battery low"`);
         }
@@ -257,7 +288,7 @@ async function updateCameraState() {
     }
 
     if (usedPids.size === 0) {
-      state.camera = "";
+      state.camera = "None";
       await os.sleepAsync(5..seconds);
       continue;
     }
@@ -285,7 +316,7 @@ async function updateLocationState() {
         .filter(Boolean) || [];
 
     if (pids.length === 0) {
-      state.location = "";
+      state.location = undefined;
       await os.sleepAsync(5..seconds);
       continue;
     }
@@ -328,7 +359,7 @@ async function updateScreenShareAndMicrophoneState() {
     });
 
     if (sharingNodes.length === 0) {
-      state.screenShare = "";
+      state.screenShare = null;
     } else {
       const apps = sharingNodes
         .map((n) =>
@@ -439,7 +470,7 @@ z"/>
 </svg>
 `;
   exec(
-    "kitty +kitten icat --align=center --place 25x25@0x0 --scale >>/dev/tty",
+    "kitty +kitten icat --align=center --place 25x25@0x0 --scale --clear >>/dev/tty",
     {
       input: ss,
       useShell: true,
