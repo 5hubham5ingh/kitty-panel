@@ -10,8 +10,8 @@ A system panel for Kitty terminal that displays real-time system metrics using t
 ## Features
 - Launches `btop` for system monitoring
 - Displays real-time audio visualization with `cava`
-- Shows system info (package count, volume, brightness, network SSID)
-- Uses `kitty @` commands to create a split-window layout
+- Shows system info (bluetooth, volume, brightness, wifi, location, microphone, screenshare, time, calender, weather)
+- Uses kitty remote control to automate the entire setup.
 
 ## Prerequisites
 Ensure you have the following installed:
@@ -22,18 +22,11 @@ Ensure you have the following installed:
 - `pactl` (PulseAudio control)
 - `iwconfig` (for network info, part of `wireless-tools`)
 - `yay` (AUR package manager for Arch-based systems)
-### Kitty Remote Control Setup
-Also, make sure to enable **remote control** in your Kitty config by adding the following line:
-```bash
-allow_remote_control yes
-```
-You can do this by:
-* **Opening your config**
-  Press Ctrl + Shift + F2 to open then edit Kitty configuration.
-* **Reload the config**
-  Press Ctrl + Shift + F5 to reload your config, or run the following command
-  `kitty @ load-config`
-
+- `bluetoothctl` (bluetooth management)
+- `curl` (for weather)
+- `upower` (for power management)
+- `pw-dump` (pipewire for screenshare and microphone state monitoring)
+- `js` (script interpreter)
 
 For more information about the Kitty Config, refer to the [Kitty Configuration Docs](https://sw.kovidgoyal.net/kitty/conf).
 ## Installation
@@ -41,19 +34,30 @@ Clone the repository and make the script executable:
 ```sh
 git clone --depth 1 https://github.com/5hubham5ingh/kitty-panel
 cd kitty-panel
-chmod +x dashboard.sh
+chmod +x kittyPanal.js
 ```
 
 ## Usage
-Run the script to launch the panel:
+Run the script to launch the dashboard:
+
 ```sh
-./dashboard.sh
+./kittyPanal.js
 ```
+
 This will:
 1. Set the font size.
 2. Split the Kitty window and launch `btop`.
 3. Further split and launch `cava`.
 4. Display real-time system info in another pane.
+
+
+### Hyprland setup
+Set a special workplace to launch the dashboard on keypress or startup-
+```text
+exec-once = hyprctl dispatch togglespecialworkspace dashboard
+$dashboard = kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o background_opacity=0.8 -o window_border_width=0 "/PATH/TO/kittyPanal.js"
+bindd = $mainMod, d, Toggle dashboard workspace, togglespecialworkspace, dashboard
+```
 
 ## Customization
 Modify `dashboard.sh` to:
