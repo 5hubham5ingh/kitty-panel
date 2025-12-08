@@ -27,7 +27,7 @@ const state = {
   camera: pendingState,
   location: pendingState,
   screenShare: pendingState,
-  occupiedWidth: 25, // Columns occupied by the logo
+  iconSize: 25,
 };
 
 print(terminal.cursorHide);
@@ -36,7 +36,7 @@ os.signal(os.SIGINT, () => {
   std.exit(0);
 });
 
-main();
+main().catch(print);
 
 async function main() {
   updateWeather();
@@ -234,25 +234,36 @@ function updateBrightnessState() {
 }
 
 function updateBluetooth() {
-  return execAsync("bluetoothctl show")
-    .then((showOutput) => {
-      const isBtOn = showOutput.split("\n").some((line) =>
-        line.trim() === "Powered: yes"
-      );
-
-      if (!isBtOn) {
-        return state.bluetooth = "Off";
+  return execAsync("systemctl status bluetooth").then((stat) =>
+    stat.lines().filter((l) => l.trim().startsWith("Active:")).find((line) =>
+      line.includes("running")
+    )
+  )
+    .then((service) => {
+      if (!service) {
+        state.bluetooth = "Disabled";
+        return;
       }
+      return execAsync("bluetoothctl show")
+        .then((showOutput) => {
+          const isBtOn = showOutput.split("\n").some((line) =>
+            line.trim() === "Powered: yes"
+          );
 
-      return execAsync("bluetoothctl devices Connected")
-        .then((device) => {
-          const deviceName = device?.trim().words().slice(2).join(" ");
-          state.bluetooth = deviceName.length ? deviceName : "Disconnected";
+          if (!isBtOn) {
+            return state.bluetooth = "Off";
+          }
+
+          return execAsync("bluetoothctl devices Connected")
+            .then((device) => {
+              const deviceName = device?.trim().words().slice(2).join(" ");
+              state.bluetooth = deviceName.length ? deviceName : "Disconnected";
+            });
+        })
+        .catch(() => {
+          state.bluetooth = "Error";
         });
-    })
-    .catch(() => {
-      state.bluetooth = "Error";
-    });
+    }).catch((_) => state.bluetooth = "Disabled");
 }
 
 async function updateBattery() {
@@ -465,11 +476,10 @@ z"/>
 </svg>
 `;
   exec(
-    "kitty +kitten icat --align=center --place 25x25@0x0 --scale --clear >>/dev/tty",
+    `kitty +kitten icat --align=center --place ${state.iconSize}x${state.iconSize}@0x0 --scale --clear >>/dev/tty`,
     {
       input: ss,
       useShell: true,
     },
   );
-  //TODO: Calculate width occupied by the image.
 }
