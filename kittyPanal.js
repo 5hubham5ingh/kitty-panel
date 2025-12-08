@@ -1,14 +1,14 @@
 #!/usr/bin/js
 
-// ['kitty @ set-font-size 12',
-//   'kitty @ launch --type=window --location=hsplit btop -p 1',
-//   'kitty @ resize-window -a vertical -i 14',
-//   'kitty @ launch --type=window --location=vsplit btop -p 2',
-//   'kitty @ send-key 5',
-//   'kitty @ launch --type=window --location=hsplit cava',
-//   'kitty @ resize-window -a vertical -i -15',
-//   'kitty @ focus-window',
-// ].forEach(cmd => { os.sleep(1..seconds); os.exec(cmd.split(' ')) })
+[
+  "kitty @ set-font-size 11",
+  "kitty @ launch --type=window --location=hsplit --no-response=yes btop -p 1",
+  "kitty @ resize-window -a vertical -i 13",
+  "kitty @ launch --type=window --location=vsplit --no-response=yes btop -p 2",
+  "kitty @ launch --type=window --location=hsplit --no-response=yes cava",
+  "kitty @ resize-window -a vertical -i -15",
+  "kitty @ focus-window",
+].forEach((cmd) => os.exec(cmd.split(" ")));
 
 const pendingState = "∙∙∙";
 
@@ -30,14 +30,15 @@ const state = {
   occupiedWidth: 25, // Columns occupied by the logo
 };
 
+print(terminal.cursorHide);
+os.signal(os.SIGINT, () => {
+  print(terminal.cursorShow);
+  std.exit(0);
+});
+
 main();
 
 async function main() {
-  os.signal(os.SIGINT, () => {
-    print(terminal.cursorShow);
-    std.exit(0);
-  });
-  std.printf(terminal.cursorHide);
   updateWeather();
   updateCalender();
   updateBattery();
@@ -45,7 +46,8 @@ async function main() {
   updateLocationState();
   updateCameraState();
   while (true) {
-    updateTime(), renderUI();
+    updateTime(), renderUiForPanel();
+
     await Promise.all([
       updateColors(),
       updateWifiState(),
@@ -60,70 +62,63 @@ async function main() {
 
 //----------------- Helpers ----------------
 
-// function renderUI() {
-//   renderLogo();
-//   const volumeBluetoothWifiBrightness = " "
-//     .stack(state.volume
-//       .stack(state.bluetooth, "right")
-//       .stack(state.wifi.join(state.brightness), "right"), "right")
-//   const stats = state.time.join(volumeBluetoothWifiBrightness.join(state.calender))
-//   state.weather.join(stats).lines()
-//     .map(line => `${" ".repeat(state.occupiedWidth)}${line}`).join('\n').log()
-// }
-
-function renderUI() {
+function renderUiForPanel() {
+  // Rerender logo only when the chromatic configuration has mutated
   if (JSON.stringify(state.colors) !== JSON.stringify(state.colorCache)) {
     renderLogo();
     state.colorCache = state.colors;
-  } else std.printf(terminal.cursorTo(0, 0));
+  } else {
+    std.printf(terminal.cursorTo(0, 0));
+  }
+
+  // ---------- Stylistic Constructs (Styling + Bordering) ----------
+
+  const c0 = state.colors[0];
+  const c1 = state.colors[1];
+  const c2 = state.colors[2];
+
+  const volBox = `Volume: ${state.volume}`.style(c1).border("rounded", c1);
+  const screenBox = `Screen: ${state.screenShare ?? "None"}`
+    .style(c1).border("rounded", c1);
+
+  const btBox = `Bluetooth: ${state.bluetooth}`.style(c2)
+    .border("rounded", c2);
+  const locBox = `Location: ${state.location ?? "None"}`
+    .style(c2).border("rounded", c2);
+
+  const wifiBox = `Wifi: ${state.wifi}`.style(c0).border("rounded", c0);
+  const brightBox = `Brightness: ${state.brightness}`.style(c0)
+    .border("rounded", c0);
+  const battBox = `Battery: ${state.battery}`.style(c0)
+    .border("rounded", c0);
+  const camBox = `Camera: ${state.camera}`.style(c0)
+    .border("rounded", c0);
+
+  const weatherBox = state.weather.border("rounded");
+  const calendarBox = state.calender.style(c1).border("rounded", c1);
+  const timeBox = state.time.style(c0).border("rounded", c0, 3, 0);
+
+  // ---------- Structural Composition (Join + Stack) ----------
+
   const volumeAndBluetooth = "\n" +
-    `Volume: ${state.volume}`.style(state.colors[1]).border(
-      "rounded",
-      state.colors[1],
-    ).join(
-      ("Screen: " + (state.screenShare ?? "None")).style(state.colors[1])
-        .border("rounded", state.colors[1]),
-    )
-      .stack(
-        `Bluetooth: ${state.bluetooth}`.style(state.colors[2]).border(
-          "rounded",
-          state.colors[2],
-        ).join(
-          ("Location: " + (state.location ?? "None")).style(state.colors[2])
-            .border("rounded", state.colors[2]),
-        ),
-        "right",
-      );
-  const volumeBluetoothAndWeather = volumeAndBluetooth.join(
-    state.weather.border("rounded"),
+    volBox.join(screenBox)
+      .stack(btBox.join(locBox), "right");
+
+  const volumeBluetoothAndWeather = volumeAndBluetooth.join(weatherBox);
+
+  const wifiBrightnessAndBattery = wifiBox.join(brightBox).join(battBox).join(
+    camBox,
   );
-  const wifiBrightnessAndBattery = `Wifi: ${state.wifi}`.style(state.colors[0])
-    .border("rounded", state.colors[0]).join(
-      `Brightness: ${state.brightness}`.style(state.colors[0]).border(
-        "rounded",
-        state.colors[0],
-      ),
-    ).join(
-      `Battery: ${state.battery}`.style(state.colors[0]).border(
-        "rounded",
-        state.colors[0],
-      ),
-    ).join(
-      ("Camera: " + state.camera).style(state.colors[0]).border(
-        "rounded",
-        state.colors[0],
-      ),
-    );
-  const infoCollection = volumeBluetoothAndWeather.stack(
-    wifiBrightnessAndBattery,
-    "right",
-  ).join(
-    state.calender.style(state.colors[1]).border("rounded", state.colors[1]),
+
+  const infoCollection = volumeBluetoothAndWeather
+    .stack(wifiBrightnessAndBattery, "right")
+    .join(calendarBox);
+
+  print(
+    infoCollection
+      .join(timeBox)
+      .align("right") + terminal.cursorUp(),
   );
-  infoCollection.join(
-    state.time.style(state.colors[0]).border("rounded", state.colors[0], 2, 0),
-  ).align("right")
-    .log();
 }
 
 async function updateCalender() {
