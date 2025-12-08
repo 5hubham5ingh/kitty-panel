@@ -26,7 +26,7 @@ Ensure you have the following installed:
 - `curl` (for weather)
 - `upower` (for power management)
 - `pw-dump` (pipewire for screenshare and microphone state monitoring)
-- `js` (script interpreter)
+- `js` ([script interpreter](https://github.com/5hubham5ingh/js-util))
 
 For more information about the Kitty Config, refer to the [Kitty Configuration Docs](https://sw.kovidgoyal.net/kitty/conf).
 ## Installation
@@ -41,7 +41,7 @@ chmod +x kittyPanal.js
 Run the script to launch the dashboard:
 
 ```sh
-./kittyPanal.js
+kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o background_opacity=0.8 -o window_border_width=0 ./kittyPanal.js
 ```
 
 This will:
@@ -60,7 +60,8 @@ bindd = $mainMod, d, Toggle dashboard workspace, togglespecialworkspace, dashboa
 ```
 
 ## Customization
-Modify `dashboard.sh` to:
+Modify `kittyPanel.js` to:
 - Change the font size
 - Adjust window layout and sizes
 - Add or replace utilities
+- Change style and colors.
