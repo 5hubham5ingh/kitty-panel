@@ -38,6 +38,11 @@ chmod +x kittyPanal.js
 ```
 
 ## Usage
+Update btop config to add these presets-
+```text
+presets = "net:0:default,mem:0:default,cpu:0:default,gpu1:0:default proc:0:default,gpu0:0:default"
+```
+
 Run the script to launch the dashboard:
 
 ```sh
