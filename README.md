@@ -61,6 +61,7 @@ Set a special workplace to launch the dashboard on keypress or startup-
 ```text
 exec-once = hyprctl dispatch togglespecialworkspace dashboard
 $dashboard = kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o background_opacity=0.8 -o window_border_width=0 "/PATH/TO/kittyPanal.js"
+workspace = special:dashboard, gapsout:50, bordersize:5, on-created-empty:$dashboard
 bindd = $mainMod, d, Toggle dashboard workspace, togglespecialworkspace, dashboard
 ```
 
