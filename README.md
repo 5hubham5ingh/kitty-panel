@@ -64,6 +64,17 @@ $dashboard = kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hol
 workspace = special:dashboard, gapsout:50, bordersize:5, on-created-empty:$dashboard
 bindd = $mainMod, d, Toggle dashboard workspace, togglespecialworkspace, dashboard
 ```
+Or, use window rules instead of special workspace like for the screen saver-
+```text
+$screenSaver = kitty -1 -o background_opacity=0 --title=screenSaver /PATH/TO/screenSaver.js
+windowrulev2 = float, title:^(screenSaver)$ 
+windowrulev2 = pin, title:^(screenSaver)$
+windowrulev2 = stayfocused, title:^(screenSaver)$
+windowrulev2 = size 100% 100%, title:^(screenSaver)$
+windowrulev2 = bordersize 0, title:^(screenSaver)$
+windowrulev2 = noshadow, title:^(screenSaver)$
+bindd = $mainMod, escape, Start screen saver, exec, $screenSaver
+```
 
 ## Customization
 Modify `kittyPanel.js` to:
