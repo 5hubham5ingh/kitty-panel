@@ -30,6 +30,7 @@ const state = {
   camera: pendingState,
   location: pendingState,
   screenShare: pendingState,
+  workspace: pendingState,
   iconSize: 25,
 };
 
@@ -59,6 +60,7 @@ async function main() {
       updateVolumeState(),
       updateBrightnessState(),
       updateBluetooth(),
+      updateWorkspace(),
     ]);
 
     await os.sleepAsync(1..seconds);
@@ -84,6 +86,7 @@ function renderUiForBar() {
 
   const now = new Date();
   const ui = (
+    formatDetail(undefined, state.workspace) +
     formatDetail(undefined, now.toTimeString().split(" ")[0]) +
     formatDetail(undefined, now.toDateString()) +
     formatDetail("Battery", state.battery) +
@@ -95,7 +98,7 @@ function renderUiForBar() {
     formatDetail("Sound", state.volume) +
     formatDetail("Screenshare", state.screenShare) +
     formatDetail("Wifi", state.wifi)
-  ) +
+  ).align("center", 205) +
     terminal.cursorTo(0, 0);
   std.out.puts(ui);
   std.out.flush();
@@ -447,6 +450,24 @@ async function updateScreenShareAndMicrophoneState() {
       (active ? "system" : "None");
     await os.sleepAsync(5..seconds);
   }
+}
+
+function updateWorkspace() {
+  return Promise.all([
+    execAsync(["hyprctl", "workspaces", "-j"]),
+    execAsync(["hyprctl", "monitors", "-j"]),
+  ]).then(([hyprSpcaes, monitors]) => {
+    const activeWorkspaceIds = [];
+    JSON.parse(monitors).find((monitor) => {
+      activeWorkspaceIds.push(monitor.activeWorkspace.id);
+    });
+    state.workspace = JSON.parse(hyprSpcaes).filter((ws) =>
+      !ws.name.includes("special")
+    ).map((wr) => {
+      if (activeWorkspaceIds.includes(wr.id)) return "●";
+      return "∙";
+    }).join("");
+  });
 }
 
 function renderLogo() {
