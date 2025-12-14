@@ -1,14 +1,17 @@
 #!/usr/bin/js
 
-[
-  "kitty @ set-font-size 11",
-  "kitty @ launch --type=window --location=hsplit --no-response=yes btop -p 1",
-  "kitty @ resize-window -a vertical -i 13",
-  "kitty @ launch --type=window --location=vsplit --no-response=yes btop -p 2",
-  "kitty @ launch --type=window --location=hsplit --no-response=yes cava",
-  "kitty @ resize-window -a vertical -i -15",
-  "kitty @ focus-window",
-].forEach((cmd) => os.exec(cmd.split(" ")));
+const IS_BAR = scriptArgs.includes("--bar");
+if (!IS_BAR) {
+  [
+    "kitty @ set-font-size 11",
+    "kitty @ launch --type=window --location=hsplit --no-response=yes btop -p 1",
+    "kitty @ resize-window -a vertical -i 13",
+    "kitty @ launch --type=window --location=vsplit --no-response=yes btop -p 2",
+    "kitty @ launch --type=window --location=hsplit --no-response=yes cava",
+    "kitty @ resize-window -a vertical -i -15",
+    "kitty @ focus-window",
+  ].forEach((cmd) => os.exec(cmd.split(" ")));
+}
 
 const pendingState = "∙∙∙";
 
@@ -30,7 +33,8 @@ const state = {
   iconSize: 25,
 };
 
-print(terminal.cursorHide);
+os.ttySetRaw();
+std.out.puts(terminal.cursorHide + terminal.cursorTo(0, 0));
 os.signal(os.SIGINT, () => {
   print(terminal.cursorShow);
   std.exit(0);
@@ -46,7 +50,8 @@ async function main() {
   updateLocationState();
   updateCameraState();
   while (true) {
-    updateTime(), renderUiForPanel();
+    if (IS_BAR) renderUiForBar();
+    else renderUiForPanel();
 
     await Promise.all([
       updateColors(),
@@ -62,13 +67,48 @@ async function main() {
 
 //----------------- Helpers ----------------
 
+function renderUiForBar() {
+  const s = "◖".style(state.colors[0]);
+  const e = "◗".style(state.colors[0]);
+
+  const formatDetail = (
+    symbol,
+    detail,
+  ) => (s +
+    `${symbol ? symbol + " ♦ " : ""}${detail ?? "None"}`.style([
+      `bg-${state.colors[0]}`,
+      "#000000",
+      "bold",
+    ]) + e +
+    " ");
+
+  const now = new Date();
+  const ui = (
+    formatDetail(undefined, now.toTimeString().split(" ")[0]) +
+    formatDetail(undefined, now.toDateString()) +
+    formatDetail("Battery", state.battery) +
+    formatDetail("Bluetooth", state.bluetooth) +
+    formatDetail("Brightness", state.brightness) +
+    formatDetail("Camera", state.camera) +
+    formatDetail("Location", state.location) +
+    formatDetail("Microphone", state.microphone) +
+    formatDetail("Sound", state.volume) +
+    formatDetail("Screenshare", state.screenShare) +
+    formatDetail("Wifi", state.wifi)
+  ) +
+    terminal.cursorTo(0, 0);
+  std.out.puts(ui);
+  std.out.flush();
+}
+
 function renderUiForPanel() {
+  updateTime();
   // Rerender logo only when the chromatic configuration has mutated
   if (JSON.stringify(state.colors) !== JSON.stringify(state.colorCache)) {
     renderLogo();
     state.colorCache = state.colors;
   } else {
-    std.printf(terminal.cursorTo(0, 0));
+    std.out.puts(terminal.cursorTo(0, 0));
   }
 
   // ---------- Stylistic Constructs (Styling + Bordering) ----------
@@ -91,8 +131,12 @@ function renderUiForPanel() {
     .border("rounded", c0);
   const battBox = `Battery: ${state.battery}`.style(c0)
     .border("rounded", c0);
-  const camBox = `Camera: ${state.camera}`.style(c0)
+  const camBox = `Camera: ${state.camera ?? "None"}`.style(c0)
     .border("rounded", c0);
+  const micBox = `Microphone: ${state.microphone}`.style(c0).border(
+    "rounded",
+    c0,
+  );
 
   const weatherBox = state.weather.border("rounded");
   const calendarBox = state.calender.style(c1).border("rounded", c1);
@@ -108,17 +152,18 @@ function renderUiForPanel() {
 
   const wifiBrightnessAndBattery = wifiBox.join(brightBox).join(battBox).join(
     camBox,
-  );
+  ).join(micBox);
 
   const infoCollection = volumeBluetoothAndWeather
     .stack(wifiBrightnessAndBattery, "right")
     .join(calendarBox);
 
-  print(
+  std.out.puts(
     infoCollection
       .join(timeBox)
-      .align("right") + terminal.cursorUp(),
+      .align("right"),
   );
+  std.out.flush();
 }
 
 async function updateCalender() {
@@ -294,7 +339,7 @@ async function updateCameraState() {
     }
 
     if (usedPids.size === 0) {
-      state.camera = "None";
+      state.camera = undefined;
       await os.sleepAsync(5..seconds);
       continue;
     }
@@ -365,7 +410,7 @@ async function updateScreenShareAndMicrophoneState() {
     });
 
     if (sharingNodes.length === 0) {
-      state.screenShare = null;
+      state.screenShare = undefined;
     } else {
       const apps = sharingNodes
         .map((n) =>
@@ -399,7 +444,7 @@ async function updateScreenShareAndMicrophoneState() {
 
     const active = (inputStreams.length > 0 || hasVirtualSource) ? 1 : 0;
     state.microphone = [...new Set(inputStreams)].join(" | ") ||
-      (active ? "system" : "Error");
+      (active ? "system" : "None");
     await os.sleepAsync(5..seconds);
   }
 }

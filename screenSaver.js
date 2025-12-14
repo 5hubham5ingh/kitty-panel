@@ -1,5 +1,6 @@
 #!/usr/bin/js
 
+os.exec("kitten @ set-window-title special".split(" "));
 print(terminal.cursorHide);
 await renderLogo();
 const updateTime = (d = new Date()) =>
