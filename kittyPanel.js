@@ -248,8 +248,8 @@ function updateTime() {
 function updateColors() {
   return execAsync("kitty @ get-colors").then((result) =>
     result.lines().filter((line) =>
-      line.startsWith("selection_background ") || line.startsWith("color0 ") ||
-      line.startsWith("color2 ")
+      line.startsWith("cursor ") || line.startsWith("color1 ") ||
+      line.startsWith("active_tab_background ")
     )
       .map((line) => line.split(/\s+/)?.[1])
       .pipe((colors) => state.colors = colors)
@@ -465,8 +465,8 @@ function updateWorkspace() {
       !ws.name.includes("special")
     ).map((wr) => {
       if (activeWorkspaceIds.includes(wr.id)) return "●";
-      return "∙";
-    }).join("");
+      return "♦";
+    }).join(" ");
   });
 }
 
