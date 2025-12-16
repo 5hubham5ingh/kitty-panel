@@ -91,6 +91,11 @@ windowrulev2 = noshadow, title:^(screenSaver)$
 bindd = $mainMod, escape, Start screen saver, exec, $screenSaver
 ```
 
+**Result**
+
+https://github.com/user-attachments/assets/d5ed34e2-5449-47bf-bd89-87a4229656e4
+
+
 ## Customization
 Modify `kittyPanel.js` to:
 - Change the font size
