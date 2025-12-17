@@ -51,7 +51,7 @@ kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o backgrou
 
 Or, to launch the bar
 ```bash
-kitty +kitten panel -1 --edge=top --margin-top=5 --toggle-visibility -o background_opacity=0 -o font_size=10 --detach=yes /home/ss/dev/kitty-panel/kittyPanel.js --bar
+kitty +kitten panel -1 --edge=bottom --margin-bottom=5 --toggle-visibility -o background_opacity=0 -o font_size=10 --detach=yes ./kittyPanel.js --bar
 ```
 
 This will:
@@ -64,13 +64,13 @@ This will:
 ### Hyprland setup
 Set a special workplace, window, key-bind, start on system startup, etc-
 ```text
+# Define commands to launch bar and dashboard
+$bar = kitty +kitten panel -1 --edge=bottom --margin-bottom=5 --toggle-visibility -o background_opacity=0 -o font_size=10 --detach=yes /PATH/TO/kittyPanel.js --bar
+$dashboard = kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o background_opacity=0.8 -o window_border_width=0 /PATH/TO/kittyPanel.js
+
 # Launch on start-up (set only bar to launch on start-up then the single keybind will alternate the visibility of bar and dashboard)
 # exec-once = hyprctl dispatch togglespecialworkspace dashboard
 exec-once = $bar
-
-# Define commands to launch bar and dashboard
-$bar = kitty +kitten panel -1 --edge=top --margin-top=5 --toggle-visibility -o background_opacity=0 -o font_size=10 --detach=yes /PATH/TO/kittyPanel.js --bar
-$dashboard = kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o background_opacity=0.8 -o window_border_width=0 /PATH/TO/kittyPanel.js
 
 # Key binds
 bindd = $mainMod, d, Toggle dashboard workspace, togglespecialworkspace, dashboard
