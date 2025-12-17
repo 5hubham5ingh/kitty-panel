@@ -467,7 +467,7 @@ function updateWorkspace() {
       if (activeWorkspaceIds.includes(wr.id)) return "●";
       return "♦";
     }).join(" ");
-  });
+  }).catch((_) => state.workspace = undefined);
 }
 
 function renderLogo() {
