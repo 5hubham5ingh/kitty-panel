@@ -76,13 +76,16 @@ function renderUiForBar() {
   const formatDetail = (
     symbol,
     detail,
-  ) => (s +
-    `${symbol ? symbol + " ♦ " : ""}${detail ?? "None"}`.style([
-      `bg-${state.colors[0]}`,
-      "#000000",
-      "bold",
-    ]) + e +
-    " ");
+  ) =>
+    detail
+      ? (s +
+        `${symbol ? symbol + " ♦ " : ""}${detail ?? "None"}`.style([
+          `bg-${state.colors[0]}`,
+          "#000000",
+          "bold",
+        ]) + e +
+        " ")
+      : "";
 
   const now = new Date();
   const ui = (
