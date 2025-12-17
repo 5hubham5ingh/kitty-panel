@@ -220,7 +220,7 @@ async function updateCalender() {
       );
     }
     state.calender = lines.map((l) => l.trimEnd()).join("\n");
-    await os.sleepAsync(1..seconds);
+    await os.sleepAsync(1..hours);
   }
 }
 
