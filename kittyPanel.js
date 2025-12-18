@@ -1,5 +1,20 @@
 #!/usr/bin/js
 
+/*
+  https://github.com/5hubham5ingh/kitty-panel
+  5hubham5ingh, MIT License
+  Dependencies:
+  - js 1.24.0
+  - kitty 0.44.0
+  - curl 8.17.0
+  - iwconfig 30
+  - pactl 17.0-93-gbe2efb
+  - brightnessctl 0.5
+  - bluetoothctl 5.85
+  - upower 1.91.0
+  - pw-dump 1.4.9
+ */
+
 const IS_BAR = scriptArgs.includes("--bar");
 if (!IS_BAR) {
   [
