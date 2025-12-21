@@ -47,7 +47,7 @@ const state = {
   screenShare: pendingState,
   workspace: pendingState,
   iconSize: 25,
-  terminalWidth: 205,
+  terminalWidth: 234,
   barHeight: 1,
 };
 
@@ -86,8 +86,8 @@ async function main() {
 //----------------- Helpers ----------------
 
 function renderUiForBar() {
-  const s = "◖".style(state.colors[0]);
-  const e = "◗".style(state.colors[0]);
+  const s = "◖".style(state.colors[2]);
+  const e = "◗".style(state.colors[2]);
 
   const formatDetail = (
     symbol,
@@ -96,7 +96,7 @@ function renderUiForBar() {
     detail
       ? (s +
         `${symbol ? symbol + " ♦ " : ""}${detail ?? "None"}`.style([
-          `bg-${state.colors[0]}`,
+          `bg-${state.colors[2]}`,
           "#000000",
           "bold",
         ]) + e +
@@ -355,7 +355,7 @@ async function updateBluetooth() {
     )
       .then((service) => {
         if (!service) {
-          state.bluetooth = "Disabled";
+          state.bluetooth = undefined; // Disabled
           return;
         }
         return execAsync("bluetoothctl show")
@@ -517,7 +517,7 @@ async function updateScreenShareAndMicrophoneState() {
 
     const active = (inputStreams.length > 0 || hasVirtualSource) ? 1 : 0;
     state.microphone = [...new Set(inputStreams)].join(" | ") ||
-      (active ? "system" : "None");
+      (active ? "system" : undefined);
     await os.sleepAsync(5..seconds);
   }
 }
