@@ -67,20 +67,19 @@ async function main() {
   updateScreenShareAndMicrophoneState();
   updateLocationState();
   updateCameraState();
+  updateWifiState();
+  updateVolumeState();
+  updateBrightnessState();
+  updateBluetooth();
+  updateWorkspace();
+
   while (true) {
     if (IS_BAR) renderUiForBar();
     else renderUiForPanel();
 
-    await Promise.all([
-      updateColors(),
-      updateWifiState(),
-      updateVolumeState(),
-      updateBrightnessState(),
-      updateBluetooth(),
-      updateWorkspace(),
-    ]);
+    await updateColors();
 
-    await os.sleepAsync(1..seconds);
+    await os.sleepAsync(1..seconds / 2);
   }
 }
 
@@ -310,62 +309,79 @@ function updateColors() {
   );
 }
 
-function updateWifiState() {
-  return execAsync("iwconfig wlan0").then((val) => {
-    const match = val.match(/ESSID:"([^\"]+)"/);
-    state.wifi = match ? match[1] : "N/A";
-  });
-}
-
-function updateVolumeState() {
-  return execAsync("pactl get-sink-volume @DEFAULT_SINK@").then((val) => {
-    const match = val.match(/(\d+)%/);
-    state.volume = match ? match[0] : "N/A";
-  });
-}
-
-function updateBrightnessState() {
-  return Promise.all([
-    execAsync("brightnessctl g"),
-    execAsync("brightnessctl max"),
-  ])
-    .then(([currentBrightness, maxBrightness]) => {
-      const percentage = Math.floor((currentBrightness * 100) / maxBrightness);
-      state.brightness = percentage;
+async function updateWifiState() {
+  while (true) {
+    await execAsync("iwconfig wlan0").then((val) => {
+      const match = val.match(/ESSID:"([^\"]+)"/);
+      state.wifi = match ? match[1] : "N/A";
     });
+    await os.sleepAsync(2..seconds);
+  }
 }
 
-function updateBluetooth() {
-  return execAsync("systemctl status bluetooth").then((stat) =>
-    stat.lines().filter((l) => l.trim().startsWith("Active:")).find((line) =>
-      line.includes("running")
+async function updateVolumeState() {
+  while (true) {
+    await execAsync("pactl get-sink-volume @DEFAULT_SINK@").then((val) => {
+      const match = val.match(/(\d+)%/);
+      state.volume = match ? match[0] : "N/A";
+    });
+
+    await os.sleepAsync(2..seconds);
+  }
+}
+
+async function updateBrightnessState() {
+  while (true) {
+    await Promise.all([
+      execAsync("brightnessctl g"),
+      execAsync("brightnessctl max"),
+    ])
+      .then(([currentBrightness, maxBrightness]) => {
+        const percentage = Math.floor(
+          (currentBrightness * 100) / maxBrightness,
+        );
+        state.brightness = percentage;
+      });
+    await os.sleepAsync(3..seconds);
+  }
+}
+
+async function updateBluetooth() {
+  while (true) {
+    await execAsync("systemctl status bluetooth").then((stat) =>
+      stat.lines().filter((l) => l.trim().startsWith("Active:")).find((line) =>
+        line.includes("running")
+      )
     )
-  )
-    .then((service) => {
-      if (!service) {
-        state.bluetooth = "Disabled";
-        return;
-      }
-      return execAsync("bluetoothctl show")
-        .then((showOutput) => {
-          const isBtOn = showOutput.split("\n").some((line) =>
-            line.trim() === "Powered: yes"
-          );
+      .then((service) => {
+        if (!service) {
+          state.bluetooth = "Disabled";
+          return;
+        }
+        return execAsync("bluetoothctl show")
+          .then((showOutput) => {
+            const isBtOn = showOutput.split("\n").some((line) =>
+              line.trim() === "Powered: yes"
+            );
 
-          if (!isBtOn) {
-            return state.bluetooth = "Off";
-          }
+            if (!isBtOn) {
+              return state.bluetooth = "Off";
+            }
 
-          return execAsync("bluetoothctl devices Connected")
-            .then((device) => {
-              const deviceName = device?.trim().words().slice(2).join(" ");
-              state.bluetooth = deviceName.length ? deviceName : "Disconnected";
-            });
-        })
-        .catch(() => {
-          state.bluetooth = "Error";
-        });
-    }).catch((_) => state.bluetooth = "Disabled");
+            return execAsync("bluetoothctl devices Connected")
+              .then((device) => {
+                const deviceName = device?.trim().words().slice(2).join(" ");
+                state.bluetooth = deviceName.length
+                  ? deviceName
+                  : "Disconnected";
+              });
+          })
+          .catch(() => {
+            state.bluetooth = "Error";
+          });
+      }).catch((_) => state.bluetooth = "Disabled");
+    await os.sleepAsync(3..seconds);
+  }
 }
 
 async function updateBattery() {
@@ -506,22 +522,25 @@ async function updateScreenShareAndMicrophoneState() {
   }
 }
 
-function updateWorkspace() {
-  return Promise.all([
-    execAsync(["hyprctl", "workspaces", "-j"]),
-    execAsync(["hyprctl", "monitors", "-j"]),
-  ]).then(([hyprSpcaes, monitors]) => {
-    const activeWorkspaceIds = [];
-    JSON.parse(monitors).find((monitor) => {
-      activeWorkspaceIds.push(monitor.activeWorkspace.id);
-    });
-    state.workspace = JSON.parse(hyprSpcaes).filter((ws) =>
-      !ws.name.includes("special")
-    ).map((wr) => {
-      if (activeWorkspaceIds.includes(wr.id)) return "●";
-      return "♦";
-    }).join(" ");
-  }).catch((_) => state.workspace = undefined);
+async function updateWorkspace() {
+  while (true) {
+    await Promise.all([
+      execAsync(["hyprctl", "workspaces", "-j"]),
+      execAsync(["hyprctl", "monitors", "-j"]),
+    ]).then(([hyprSpcaes, monitors]) => {
+      const activeWorkspaceIds = [];
+      JSON.parse(monitors).find((monitor) => {
+        activeWorkspaceIds.push(monitor.activeWorkspace.id);
+      });
+      state.workspace = JSON.parse(hyprSpcaes).filter((ws) =>
+        !ws.name.includes("special")
+      ).map((wr) => {
+        if (activeWorkspaceIds.includes(wr.id)) return "●";
+        return "♦";
+      }).join(" ");
+    }).catch((_) => state.workspace = undefined);
+    await os.sleepAsync(1..seconds / 2);
+  }
 }
 
 function renderLogo() {
