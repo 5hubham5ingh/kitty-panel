@@ -530,14 +530,25 @@ async function updateWorkspace() {
     ]).then(([hyprSpcaes, monitors]) => {
       const activeWorkspaceIds = [];
       JSON.parse(monitors).find((monitor) => {
-        activeWorkspaceIds.push(monitor.activeWorkspace.id);
+        if (monitor.specialWorkspace.id) {
+          activeWorkspaceIds.push(monitor.specialWorkspace.id);
+        } else activeWorkspaceIds.push(monitor.activeWorkspace.id);
       });
-      state.workspace = JSON.parse(hyprSpcaes).filter((ws) =>
-        !ws.name.includes("special")
-      ).map((wr) => {
-        if (activeWorkspaceIds.includes(wr.id)) return "●";
-        return "♦";
-      }).join(" ");
+
+      const workspaces = JSON.parse(hyprSpcaes);
+
+      const specialWorkspace = workspaces.find((ws) =>
+        activeWorkspaceIds.includes(ws.id) && ws.name.includes("special")
+      );
+      if (specialWorkspace) return state.workspace = specialWorkspace.name;
+
+      state.workspace = workspaces.filter((ws) => !ws.name.includes("special"))
+        .sort((ws1, ws2) => ws1.id > ws2.id).map(
+          (wr) => {
+            if (activeWorkspaceIds.includes(wr.id)) return "●";
+            return "♦";
+          },
+        ).join(" ");
     }).catch((_) => state.workspace = undefined);
     await os.sleepAsync(1..seconds / 2);
   }
