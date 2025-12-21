@@ -47,6 +47,8 @@ const state = {
   screenShare: pendingState,
   workspace: pendingState,
   iconSize: 25,
+  terminalWidth: 205,
+  barHeight: 1,
 };
 
 os.ttySetRaw();
@@ -100,25 +102,59 @@ function renderUiForBar() {
           "bold",
         ]) + e +
         " ")
-      : "";
+      : undefined;
 
   const now = new Date();
-  const ui = (
-    formatDetail(undefined, state.workspace) +
-    formatDetail(undefined, now.toTimeString().split(" ")[0]) +
-    formatDetail(undefined, now.toDateString()) +
-    formatDetail("Battery", state.battery) +
-    formatDetail("Bluetooth", state.bluetooth) +
-    formatDetail("Brightness", state.brightness) +
-    formatDetail("Camera", state.camera) +
-    formatDetail("Location", state.location) +
-    formatDetail("Microphone", state.microphone) +
-    formatDetail("Sound", state.volume) +
-    formatDetail("Screenshare", state.screenShare) +
-    formatDetail("Wifi", state.wifi)
-  ).align("center", 205) +
-    terminal.cursorTo(0, 0);
-  std.out.puts(ui);
+  const uiElements = [
+    formatDetail(undefined, state.workspace),
+    formatDetail(undefined, now.toTimeString().split(" ")[0]),
+    formatDetail(undefined, now.toDateString()),
+    formatDetail("Battery", state.battery),
+    formatDetail("Bluetooth", state.bluetooth),
+    formatDetail("Brightness", state.brightness),
+    formatDetail("Camera", state.camera),
+    formatDetail("Location", state.location),
+    formatDetail("Microphone", state.microphone),
+    formatDetail("Sound", state.volume),
+    formatDetail("Screenshare", state.screenShare),
+    formatDetail("Wifi", state.wifi),
+  ].filter(Boolean);
+
+  const barLength = uiElements.reduce(
+    (l, e) => l + e.replaceAll("♦", " ").stripEmojis().stripStyle().length + 1,
+    0,
+  );
+
+  if (barLength > state.terminalWidth) {
+    let lineCount = 0;
+    const lines = [];
+    for (const uiElement of uiElements) {
+      const nextLineLength = (lines[lineCount] + uiElement).stripStyle().length;
+
+      if (nextLineLength >= state.terminalWidth) {
+        lines[++lineCount] = "";
+        lineCount++;
+      }
+      lines[lineCount] ??= "";
+      lines[lineCount] += uiElement;
+    }
+    if (lines.length !== state.barHeight) {
+      exec(
+        `kitten @ --to=unix:@bar resize-os-window --action=os-panel --incremental edge=bottom lines=${state
+          .barHeight = lines.length}`.split(" "),
+      );
+    }
+    std.out.puts(
+      lines.join("\n").align("center", state.terminalWidth - 6) +
+        terminal.cursorTo(0, 0),
+    );
+  } else {
+    std.out.puts(
+      uiElements.join("").align("center", state.terminalWidth) +
+        terminal.cursorTo(0, 0),
+    );
+  }
+
   std.out.flush();
 }
 
