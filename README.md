@@ -65,7 +65,7 @@ This will:
 Set a special workplace, window, key-bind, start on system startup, etc-
 ```text
 # Define commands to launch bar and dashboard
-$bar = kitty +kitten panel -1 --edge=bottom --margin-bottom=5 --toggle-visibility -o background_opacity=0 -o font_size=10 --detach=yes /PATH/TO/kittyPanel.js --bar
+$bar = kitty +kitten panel -1 --listen-on=unix:@bar --edge=bottom --margin-bottom=3 --toggle-visibility -o background_opacity=0 -o font_size=11 --detach=yes /PATH/TO/kittyPanel.js --bar
 $dashboard = kitty -1 -o allow_remote_control=yes -o window_margin_width=0 --hold -o background_opacity=0.8 -o window_border_width=0 /PATH/TO/kittyPanel.js
 
 # Launch on start-up (set only bar to launch on start-up then the single keybind will alternate the visibility of bar and dashboard)
